@@ -228,8 +228,9 @@
         <span class="hud-label">📏 Dist. to Mars</span>
         <span class="hud-value" id="hud-distance">225,000,000 km</span>
       </div>
-      <div class="hud-box" style="pointer-events:auto">
+      <div class="hud-box" style="pointer-events:auto;flex-direction:row;gap:6px;">
         <button id="sound-btn" onclick="toggleSound()">🔊 Sound ON</button>
+        <button id="reset-btn" onclick="confirmReset()" style="background:rgba(255,60,60,0.25);border:1px solid rgba(255,60,60,0.5);border-radius:6px;color:#ff6b6b;padding:4px 8px;font-size:12px;cursor:pointer;font-family:'Courier New',monospace;">🔄 Reset</button>
       </div>
     </div>
   </div>
@@ -762,6 +763,50 @@ function loadGame() {
       Object.assign(state, s);
     }
   } catch(e) {}
+}
+
+// ===== RESET =====
+let resetOverlay = null;
+
+function confirmReset() {
+  if (state.phase !== 'idle') return;
+  if (resetOverlay) return;
+
+  resetOverlay = document.createElement('div');
+  resetOverlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:center;justify-content:center;';
+  resetOverlay.innerHTML = `
+    <div style="background:#1a1a2e;border:2px solid #FFD700;border-radius:16px;padding:24px;text-align:center;max-width:280px;font-family:'Courier New',monospace;">
+      <div style="font-size:28px;margin-bottom:10px;">⚠️</div>
+      <div style="color:#FFD700;font-size:16px;font-weight:800;margin-bottom:8px;">RESET PROGRESS?</div>
+      <div style="color:rgba(255,255,255,0.7);font-size:12px;margin-bottom:20px;">This will erase all your trips, gold deliveries, and price gains. This cannot be undone.</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="cancelReset()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#fff;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Courier New',monospace;">CANCEL</button>
+        <button onclick="doReset()" style="background:rgba(255,60,60,0.3);border:1px solid #ff6b6b;border-radius:8px;color:#ff6b6b;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Courier New',monospace;">RESET</button>
+      </div>
+    </div>`;
+  document.body.appendChild(resetOverlay);
+}
+
+function cancelReset() {
+  if (resetOverlay) { resetOverlay.remove(); resetOverlay = null; }
+}
+
+function doReset() {
+  if (resetOverlay) { resetOverlay.remove(); resetOverlay = null; }
+  state.goldOnEarth = 300000;
+  state.goldOnMars = 0;
+  state.rocketStatus = 'unloaded';
+  state.goldPrice = 163000000;
+  state.distanceToMars = TOTAL_DISTANCE;
+  state.currentScreen = 'earth';
+  state.phase = 'idle';
+  state.direction = 'toMars';
+  state.tripCount = 0;
+  state.showMessage = false;
+  setRocketPosition(26, false, false);
+  showScreen('earth');
+  updateUI();
+  saveGame();
 }
 
 // ===== INIT =====
