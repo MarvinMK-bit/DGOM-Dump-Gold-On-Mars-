@@ -655,7 +655,7 @@ function landOnMars() {
       // Deliver gold
       state.goldOnMars += GOLD_PER_LOAD;
       state.goldOnEarth -= GOLD_PER_LOAD;
-      state.goldPrice = state.goldPrice * (100 + state.goldOnMars / INITIAL_GOLD);
+      state.goldPrice = (100 + state.goldOnMars / 300000) * 163000000;
       state.rocketStatus = 'unloaded';
       state.phase = 'idle';
       state.showMessage = true;
