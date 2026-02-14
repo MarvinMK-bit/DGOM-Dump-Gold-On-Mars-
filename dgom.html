@@ -109,6 +109,20 @@
     position: absolute; bottom: 26%; z-index: 5;
   }
 
+  /* Bank building */
+  #bank-building {
+    position: absolute; right: 8%; bottom: 25%; z-index: 4;
+  }
+
+  /* Flying gold bar animation */
+  .flying-gold {
+    position: absolute; z-index: 15; pointer-events: none;
+  }
+  @keyframes flyGold {
+    0% { opacity: 1; }
+    100% { opacity: 1; }
+  }
+
   /* Buttons */
   #load-btn {
     position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%);
@@ -243,6 +257,8 @@
       <div style="position:absolute;top:15px;left:30%;width:40px;height:15px;border-radius:50%;background:rgba(56,142,60,0.3)"></div>
       <div style="position:absolute;top:5px;right:15%;width:50px;height:18px;border-radius:50%;background:rgba(76,175,80,0.3)"></div>
     </div>
+    <!-- Bank Building -->
+    <div id="bank-building"></div>
   </div>
 
   <!-- SPACE SCREEN -->
@@ -268,12 +284,16 @@
   <div id="rocket-container"></div>
 
   <!-- GOLD PILES -->
-  <div class="gold-pile" id="gold-earth" style="left:68%"></div>
+  <div class="gold-pile" id="gold-earth" style="right:10%;left:auto;bottom:30%"></div>
   <div class="gold-pile" id="gold-mars" style="left:68%" class="hidden"></div>
+
+  <!-- Flying gold bars container -->
+  <div id="flying-gold-container" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:15;"></div>
 
   <!-- UI Elements -->
   <button id="load-btn" class="hidden" onclick="loadGold()">⬆️ LOAD GOLD (100 tons)</button>
   <div id="launch-hint" class="hint-text hidden">☝️ SWIPE UP TO LAUNCH</div>
+  <div id="loading-hint" class="hint-text hidden" style="color:#FFA000;">⏳ Loading gold onto rocket...</div>
   <div id="travel-info" class="travel-info hidden"></div>
   <div id="celebration-box" class="celebration hidden">
     <div class="msg">🎉 Hurray, the markets are happy! 🎉</div>
@@ -451,6 +471,41 @@ function createStars(container, count) {
   }
 }
 
+const bankSVG = `<svg width="90" height="80" viewBox="0 0 90 80">
+  <!-- Roof / Pediment -->
+  <path d="M5 28 L45 5 L85 28 Z" fill="#8B7355" stroke="#6B5335" stroke-width="1"/>
+  <path d="M10 28 L45 8 L80 28 Z" fill="#A08060"/>
+  <!-- Roof trim -->
+  <rect x="3" y="26" width="84" height="4" rx="1" fill="#6B5335"/>
+  <!-- Building body -->
+  <rect x="8" y="30" width="74" height="42" fill="#D2B48C" stroke="#8B7355" stroke-width="1"/>
+  <!-- Pillars -->
+  <rect x="14" y="30" width="6" height="42" fill="#C4A882" stroke="#8B7355" stroke-width="0.5" rx="1"/>
+  <rect x="30" y="30" width="6" height="42" fill="#C4A882" stroke="#8B7355" stroke-width="0.5" rx="1"/>
+  <rect x="54" y="30" width="6" height="42" fill="#C4A882" stroke="#8B7355" stroke-width="0.5" rx="1"/>
+  <rect x="70" y="30" width="6" height="42" fill="#C4A882" stroke="#8B7355" stroke-width="0.5" rx="1"/>
+  <!-- Door -->
+  <rect x="37" y="48" width="16" height="24" rx="8" fill="#4A3520" stroke="#3A2510" stroke-width="0.5"/>
+  <circle cx="50" cy="60" r="1.5" fill="#FFD700"/>
+  <!-- Windows -->
+  <rect x="16" y="36" width="8" height="10" rx="1" fill="#87CEEB" stroke="#6B5335" stroke-width="0.5" opacity="0.7"/>
+  <rect x="66" y="36" width="8" height="10" rx="1" fill="#87CEEB" stroke="#6B5335" stroke-width="0.5" opacity="0.7"/>
+  <!-- BANK text -->
+  <rect x="25" y="17" width="40" height="10" rx="2" fill="#6B5335"/>
+  <text x="45" y="25" text-anchor="middle" font-size="8" fill="#FFD700" font-weight="bold" font-family="serif">BANK</text>
+  <!-- Foundation -->
+  <rect x="5" y="72" width="80" height="6" rx="1" fill="#8B7355" stroke="#6B5335" stroke-width="0.5"/>
+  <!-- Gold visible inside (through door) -->
+  <rect x="40" y="60" width="5" height="3" rx="0.5" fill="#FFD700" stroke="#B8860B" stroke-width="0.3"/>
+  <rect x="43" y="57" width="5" height="3" rx="0.5" fill="#FFD700" stroke="#B8860B" stroke-width="0.3"/>
+  <rect x="41" y="54" width="5" height="3" rx="0.5" fill="#FFD700" stroke="#B8860B" stroke-width="0.3"/>
+</svg>`;
+
+const goldBarMiniSVG = `<svg width="16" height="10" viewBox="0 0 16 10">
+  <rect x="1" y="1" width="14" height="8" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.5"/>
+  <rect x="2" y="2" width="12" height="3" rx="0.5" fill="#FFEC8B" opacity="0.6"/>
+</svg>`;
+
 function initVisuals() {
   createStars(document.getElementById('earth-stars'), 60);
   createStars(document.getElementById('space-stars'), 80);
@@ -461,6 +516,7 @@ function initVisuals() {
 
   document.getElementById('gold-earth').innerHTML = goldSVG;
   document.getElementById('gold-mars').innerHTML = goldSVG;
+  document.getElementById('bank-building').innerHTML = bankSVG;
 }
 
 function formatPrice(price) {
@@ -515,17 +571,21 @@ function updateUI() {
 
   showScreen(state.currentScreen);
 
-  // Gold piles
+  // Gold piles and bank
   showEl('gold-earth', isEarth && state.goldOnEarth > 0 && state.phase !== 'landing');
   showEl('gold-mars', isMars && state.goldOnMars > 0 && state.phase !== 'landing');
+  showEl('bank-building', isEarth);
+  showEl('flying-gold-container', isEarth);
 
   // Buttons/hints
   const canLoad = isEarth && state.phase === 'idle' && state.rocketStatus === 'unloaded' && state.goldOnEarth >= GOLD_PER_LOAD;
   const canLaunch = isEarth && state.phase === 'idle' && state.rocketStatus === 'loaded';
-  const allDone = isEarth && state.phase === 'idle' && state.goldOnEarth < GOLD_PER_LOAD;
+  const isLoading = isEarth && state.phase === 'loading';
+  const allDone = isEarth && state.phase === 'idle' && state.goldOnEarth < GOLD_PER_LOAD && state.rocketStatus === 'unloaded';
 
   showEl('load-btn', canLoad);
   showEl('launch-hint', canLaunch);
+  showEl('loading-hint', isLoading);
   showEl('end-msg', allDone);
   showEl('travel-info', isSpace);
   showEl('celebration-box', isMars && state.showMessage);
@@ -582,14 +642,86 @@ function updateSpacePlanets(progress) {
 }
 
 // ===== GAME LOGIC =====
+let loadAnimTimer = null;
+
 function loadGold() {
   initAudio();
   if (soundOn) startBgMusic();
-  playLoadSound();
-  state.rocketStatus = 'loaded';
-  setRocketPosition(26, false, false);
+  state.phase = 'loading';
+  showEl('load-btn', false);
   updateUI();
-  saveGame();
+
+  // Get positions for animation
+  const bank = document.getElementById('bank-building');
+  const rocket = document.getElementById('rocket-container');
+  const container = document.getElementById('flying-gold-container');
+  const bankRect = bank.getBoundingClientRect();
+  const rocketRect = rocket.getBoundingClientRect();
+
+  const startX = bankRect.left + bankRect.width * 0.4;
+  const startY = bankRect.top + bankRect.height * 0.7;
+  const endX = rocketRect.left + rocketRect.width / 2 - 8;
+  const endY = rocketRect.top + rocketRect.height * 0.5;
+
+  let barsLaunched = 0;
+  const totalBars = 8;
+  const barInterval = 250; // ms between each bar
+
+  loadAnimTimer = setInterval(() => {
+    if (barsLaunched >= totalBars) {
+      clearInterval(loadAnimTimer);
+      loadAnimTimer = null;
+
+      // Finish loading after last bar arrives
+      setTimeout(() => {
+        container.innerHTML = '';
+        state.rocketStatus = 'loaded';
+        state.phase = 'idle';
+        playLoadSound();
+        setRocketPosition(26, false, false);
+        updateUI();
+        saveGame();
+      }, 600);
+      return;
+    }
+
+    // Create a flying gold bar
+    const bar = document.createElement('div');
+    bar.className = 'flying-gold';
+    bar.innerHTML = goldBarMiniSVG;
+    bar.style.cssText = `left:${startX}px;top:${startY}px;position:absolute;transition:all 0.5s cubic-bezier(0.2,0.8,0.3,1);`;
+    container.appendChild(bar);
+
+    // Play a tiny clink sound for each bar
+    if (audioCtx && soundOn) {
+      try {
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = 800 + barsLaunched * 60;
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+      } catch(e) {}
+    }
+
+    // Animate to rocket with slight arc
+    requestAnimationFrame(() => {
+      const midY = Math.min(startY, endY) - 30 - Math.random() * 20;
+      bar.style.left = endX + 'px';
+      bar.style.top = endY + 'px';
+      bar.style.transform = `rotate(${Math.random() * 30 - 15}deg) scale(0.8)`;
+    });
+
+    // Remove bar after it arrives
+    setTimeout(() => {
+      bar.style.opacity = '0';
+      setTimeout(() => { if (bar.parentNode) bar.parentNode.removeChild(bar); }, 200);
+    }, 550);
+
+    barsLaunched++;
+  }, barInterval);
 }
 
 function startTravel(direction) {
@@ -793,6 +925,8 @@ function cancelReset() {
 
 function doReset() {
   if (resetOverlay) { resetOverlay.remove(); resetOverlay = null; }
+  if (loadAnimTimer) { clearInterval(loadAnimTimer); loadAnimTimer = null; }
+  document.getElementById('flying-gold-container').innerHTML = '';
   state.goldOnEarth = 300000;
   state.goldOnMars = 0;
   state.rocketStatus = 'unloaded';
