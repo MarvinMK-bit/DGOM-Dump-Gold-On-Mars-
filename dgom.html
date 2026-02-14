@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>DGOM: Dump Gold on Mars</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: 'Courier New', monospace;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    -webkit-touch-callout: none;
+  }
+  #game {
+    width: 100vw; height: 100vh;
+    position: relative; overflow: hidden;
+  }
+
+  /* Title */
+  #title-bar {
+    position: absolute; top: 0; left: 0; right: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+    padding: 6px 0 30px 0; text-align: center; z-index: 100;
+  }
+  #title-bar span {
+    font-size: 12px; font-weight: 800; letter-spacing: 3px;
+    color: #FFD700; text-shadow: 0 0 10px rgba(255,215,0,0.3);
+  }
+
+  /* HUD */
+  #hud {
+    position: absolute; top: 26px; left: 0; right: 0;
+    padding: 8px 10px; z-index: 90;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    pointer-events: none;
+  }
+  .hud-col { display: flex; flex-direction: column; gap: 5px; }
+  .hud-col.right { align-items: flex-end; }
+  .hud-box {
+    display: flex; flex-direction: column; gap: 1px;
+    background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+    padding: 5px 8px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    min-width: 90px;
+  }
+  .hud-label {
+    font-size: 9px; color: rgba(255,255,255,0.6); letter-spacing: 0.5px;
+  }
+  .hud-value {
+    font-size: 13px; color: #fff; font-weight: 700;
+  }
+  .hud-value.loaded { color: #4CAF50; text-transform: uppercase; font-weight: 800; }
+  .hud-value.unloaded { color: #FF9800; text-transform: uppercase; font-weight: 800; }
+  .hud-value.price { color: #4CAF50; font-size: 12px; max-width: 140px; text-align: right; word-break: break-all; }
+  .hud-box.status-loaded { border-color: #4CAF50; }
+  .hud-box.status-unloaded { border-color: #FF9800; }
+
+  #sound-btn {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 6px; color: #fff; padding: 4px 8px; font-size: 12px;
+    cursor: pointer; pointer-events: auto; font-family: 'Courier New', monospace;
+  }
+
+  /* Screens */
+  .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  .space-bg {
+    position: absolute; top: 0; left: 0; right: 0; height: 75%;
+  }
+  .earth-space { background: linear-gradient(180deg, #000011 0%, #000833 40%, #001155 100%); }
+  .mars-space { background: linear-gradient(180deg, #000011 0%, #1a0500 40%, #2d0a00 100%); }
+  .deep-space { background: radial-gradient(ellipse at 50% 50%, #0a0a2e 0%, #000005 100%); width: 100%; height: 100%; }
+
+  .earth-surface {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 25%;
+    background: linear-gradient(180deg, #2E7D32 0%, #1B5E20 30%, #33691E 60%, #1B5E20 100%);
+    border-top: 3px solid #4CAF50;
+  }
+  .mars-surface {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 25%;
+    background: linear-gradient(180deg, #D84315 0%, #BF360C 25%, #8D2500 50%, #BF360C 75%, #A52E00 100%);
+    border-top: 3px solid #FF5722;
+  }
+
+  /* Stars */
+  .star {
+    position: absolute; border-radius: 50%; background: #fff;
+  }
+
+  /* Rocket */
+  #rocket-container {
+    position: absolute; left: 50%; z-index: 10;
+    transform: translateX(-50%);
+    filter: drop-shadow(0 0 8px rgba(255,140,0,0.5));
+    transition: bottom 0.3s ease-out;
+  }
+  #rocket-container.flip { transform: translateX(-50%) rotate(180deg); }
+
+  /* Gold pile */
+  .gold-pile {
+    position: absolute; bottom: 26%; z-index: 5;
+  }
+
+  /* Buttons */
+  #load-btn {
+    position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%);
+    z-index: 20; background: linear-gradient(135deg, #FFD700, #FFA000);
+    border: none; border-radius: 12px; padding: 14px 28px;
+    font-size: 16px; font-weight: 800; color: #1a0500;
+    cursor: pointer; font-family: 'Courier New', monospace;
+    box-shadow: 0 4px 20px rgba(255,215,0,0.4);
+    letter-spacing: 1px;
+  }
+  #load-btn:active { transform: translateX(-50%) scale(0.95); }
+
+  .hint-text {
+    position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%);
+    z-index: 20; text-align: center; color: #FFD700;
+    font-size: 15px; font-weight: 700;
+    text-shadow: 0 0 10px rgba(255,215,0,0.5);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .travel-info {
+    position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
+    z-index: 20; text-align: center; color: #FFD700;
+    font-size: 13px; font-weight: 700;
+    background: rgba(0,0,0,0.6); padding: 8px 16px; border-radius: 8px;
+  }
+
+  .celebration {
+    position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
+    z-index: 20; text-align: center;
+  }
+  .celebration .msg {
+    color: #FFD700; font-size: 16px; font-weight: 800;
+    text-shadow: 0 0 15px rgba(255,215,0,0.6);
+    background: rgba(0,0,0,0.7); padding: 12px 18px; border-radius: 12px;
+    border: 2px solid #FFD700;
+    animation: celebration 0.5s ease-in-out;
+  }
+  .celebration .sub {
+    margin-top: 10px; color: #fff; font-size: 13px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .end-msg {
+    position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%);
+    z-index: 20; color: #FF6F00; font-size: 13px; font-weight: 700;
+    background: rgba(0,0,0,0.7); padding: 8px 16px; border-radius: 8px;
+  }
+
+  /* Planet orbs */
+  .planet {
+    position: absolute; border-radius: 50%; transition: all 1s;
+  }
+  .earth-orb {
+    background: radial-gradient(circle at 40% 35%, #4FC3F7 0%, #2196F3 40%, #1565C0 70%, #0D47A1 100%);
+    box-shadow: 0 0 30px rgba(33,150,243,0.3);
+  }
+  .mars-orb {
+    background: radial-gradient(circle at 40% 35%, #FF8A65 0%, #E64A19 40%, #BF360C 100%);
+    box-shadow: 0 0 20px rgba(230,74,25,0.3);
+  }
+  .earth-from-mars {
+    position: absolute; top: 12%; right: 18%; width: 14px; height: 14px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #4FC3F7, #1565C0);
+    box-shadow: 0 0 8px rgba(33,150,243,0.5);
+  }
+
+  /* Trip counter */
+  #trip-counter {
+    position: absolute; bottom: 4px; right: 10px; z-index: 50;
+    font-size: 10px; color: rgba(255,255,255,0.3);
+  }
+
+  .hidden { display: none !important; }
+
+  @keyframes twinkle {
+    0% { opacity: 0.3; } 100% { opacity: 1; }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+  }
+  @keyframes celebration {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <!-- Title -->
+  <div id="title-bar"><span>DGOM: DUMP GOLD ON MARS</span></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hud-col">
+      <div class="hud-box">
+        <span class="hud-label">🌍 Gold on Earth</span>
+        <span class="hud-value" id="hud-earth">300,000 tons</span>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">🔴 Gold on Mars</span>
+        <span class="hud-value" id="hud-mars">0 tons</span>
+      </div>
+      <div class="hud-box" id="hud-status-box">
+        <span class="hud-label">🚀 Rocket</span>
+        <span class="hud-value" id="hud-status">UNLOADED</span>
+      </div>
+    </div>
+    <div class="hud-col right">
+      <div class="hud-box">
+        <span class="hud-label">📈 Gold Price</span>
+        <span class="hud-value price" id="hud-price">$163.00M</span>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">📏 Dist. to Mars</span>
+        <span class="hud-value" id="hud-distance">225,000,000 km</span>
+      </div>
+      <div class="hud-box" style="pointer-events:auto">
+        <button id="sound-btn" onclick="toggleSound()">🔊 Sound ON</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EARTH SCREEN -->
+  <div id="screen-earth" class="screen">
+    <div class="space-bg earth-space" id="earth-stars"></div>
+    <div class="earth-surface">
+      <div style="position:absolute;top:8px;left:10%;width:60px;height:20px;border-radius:50%;background:rgba(76,175,80,0.4)"></div>
+      <div style="position:absolute;top:15px;left:30%;width:40px;height:15px;border-radius:50%;background:rgba(56,142,60,0.3)"></div>
+      <div style="position:absolute;top:5px;right:15%;width:50px;height:18px;border-radius:50%;background:rgba(76,175,80,0.3)"></div>
+    </div>
+  </div>
+
+  <!-- SPACE SCREEN -->
+  <div id="screen-space" class="screen hidden">
+    <div class="deep-space" id="space-stars"></div>
+    <div id="planet-a" class="planet hidden"></div>
+    <div id="planet-b" class="planet hidden"></div>
+  </div>
+
+  <!-- MARS SCREEN -->
+  <div id="screen-mars" class="screen hidden">
+    <div class="space-bg mars-space" id="mars-stars"></div>
+    <div class="mars-surface">
+      <div style="position:absolute;top:12px;left:15%;width:35px;height:12px;border-radius:50%;background:rgba(150,50,20,0.4);border:1px solid rgba(100,30,10,0.3)"></div>
+      <div style="position:absolute;top:20px;left:60%;width:25px;height:10px;border-radius:50%;background:rgba(150,50,20,0.3)"></div>
+      <div style="position:absolute;top:8px;right:20%;width:20px;height:8px;border-radius:50%;background:rgba(180,60,20,0.35)"></div>
+      <div style="position:absolute;top:5px;left:40%;width:8px;height:8px;background:#943A15;border-radius:30% 70% 50% 50%"></div>
+    </div>
+    <div class="earth-from-mars"></div>
+  </div>
+
+  <!-- ROCKET -->
+  <div id="rocket-container"></div>
+
+  <!-- GOLD PILES -->
+  <div class="gold-pile" id="gold-earth" style="left:68%"></div>
+  <div class="gold-pile" id="gold-mars" style="left:68%" class="hidden"></div>
+
+  <!-- UI Elements -->
+  <button id="load-btn" class="hidden" onclick="loadGold()">⬆️ LOAD GOLD (100 tons)</button>
+  <div id="launch-hint" class="hint-text hidden">☝️ SWIPE UP TO LAUNCH</div>
+  <div id="travel-info" class="travel-info hidden"></div>
+  <div id="celebration-box" class="celebration hidden">
+    <div class="msg">🎉 Hurray, the markets are happy! 🎉</div>
+    <div class="sub">☝️ SWIPE UP TO RETURN TO EARTH</div>
+  </div>
+  <div id="end-msg" class="end-msg hidden">🏆 All gold delivered to Mars!</div>
+
+  <div id="trip-counter">Trips: 0</div>
+</div>
+
+<script>
+// ===== GAME STATE =====
+const GOLD_PER_LOAD = 100;
+const INITIAL_GOLD = 300000;
+const TRAVEL_DURATION = 25; // seconds
+const TOTAL_DISTANCE = 225000000;
+
+let state = {
+  goldOnEarth: 300000,
+  goldOnMars: 0,
+  rocketStatus: 'unloaded',
+  goldPrice: 163000000,
+  distanceToMars: 225000000,
+  currentScreen: 'earth',
+  phase: 'idle',
+  direction: 'toMars',
+  tripCount: 0,
+  showMessage: false,
+};
+
+let soundOn = true;
+let travelTimer = null;
+let landingTimer = null;
+let saveTimeout = null;
+
+// ===== SOUND ENGINE =====
+let audioCtx = null;
+let bgNodes = null;
+let bgGain = null;
+let rocketNodes = null;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function startBgMusic() {
+  if (!audioCtx || !soundOn || bgNodes) return;
+  try {
+    bgGain = audioCtx.createGain();
+    bgGain.gain.value = 0.06;
+    bgGain.connect(audioCtx.destination);
+    const osc1 = audioCtx.createOscillator(); osc1.type = 'sine'; osc1.frequency.value = 55;
+    const osc2 = audioCtx.createOscillator(); osc2.type = 'sine'; osc2.frequency.value = 82.5;
+    const osc3 = audioCtx.createOscillator(); osc3.type = 'sine'; osc3.frequency.value = 110;
+    const lfo = audioCtx.createOscillator(); lfo.frequency.value = 0.05;
+    const lfoGain = audioCtx.createGain(); lfoGain.gain.value = 3;
+    lfo.connect(lfoGain); lfoGain.connect(osc1.frequency); lfoGain.connect(osc2.frequency);
+    const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 200; filter.Q.value = 2;
+    osc1.connect(filter); osc2.connect(filter); osc3.connect(filter); filter.connect(bgGain);
+    osc1.start(); osc2.start(); osc3.start(); lfo.start();
+    bgNodes = [osc1, osc2, osc3, lfo];
+  } catch(e) {}
+}
+
+function stopBgMusic() {
+  if (bgNodes) { bgNodes.forEach(n => { try{n.stop();}catch(e){} }); bgNodes = null; }
+}
+
+function playRocketSound() {
+  if (!audioCtx || !soundOn) return;
+  try {
+    const g = audioCtx.createGain(); g.gain.value = 0.08; g.connect(audioCtx.destination);
+    const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.5;
+    const noise = audioCtx.createBufferSource(); noise.buffer = buf; noise.loop = true;
+    const f = audioCtx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 400;
+    const rumble = audioCtx.createOscillator(); rumble.type = 'sawtooth'; rumble.frequency.value = 30;
+    const rg = audioCtx.createGain(); rg.gain.value = 0.04;
+    noise.connect(f); f.connect(g); rumble.connect(rg); rg.connect(g);
+    noise.start(); rumble.start();
+    rocketNodes = [noise, rumble];
+  } catch(e) {}
+}
+
+function stopRocketSound() {
+  if (rocketNodes) { rocketNodes.forEach(n => { try{n.stop();}catch(e){} }); rocketNodes = null; }
+}
+
+function playLoadSound() {
+  if (!audioCtx || !soundOn) return;
+  try {
+    const osc = audioCtx.createOscillator(); osc.type = 'sine';
+    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.2);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+  } catch(e) {}
+}
+
+function playCelebration() {
+  if (!audioCtx || !soundOn) return;
+  try {
+    [523, 659, 784, 1047].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0, audioCtx.currentTime + i * 0.15);
+      g.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + i * 0.15 + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.15 + 0.5);
+      osc.connect(g); g.connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime + i * 0.15);
+      osc.stop(audioCtx.currentTime + i * 0.15 + 0.5);
+    });
+  } catch(e) {}
+}
+
+function toggleSound() {
+  initAudio();
+  soundOn = !soundOn;
+  if (!soundOn) { stopBgMusic(); stopRocketSound(); }
+  else { startBgMusic(); }
+  document.getElementById('sound-btn').textContent = soundOn ? '🔊 Sound ON' : '🔇 Sound OFF';
+}
+
+// ===== RENDERING =====
+const rocketSVG = `<svg width="40" height="80" viewBox="0 0 40 80">
+  <path d="M20 0 L28 25 L12 25 Z" fill="#E8E8E8" stroke="#888" stroke-width="0.5"/>
+  <path d="M20 0 L24 15 L20 25 L16 15 Z" fill="#F5F5F5"/>
+  <circle cx="20" cy="20" r="4" fill="#4FC3F7" stroke="#0288D1" stroke-width="1"/>
+  <circle cx="19" cy="19" r="1.5" fill="#B3E5FC" opacity="0.7"/>
+  <rect x="12" y="25" width="16" height="35" rx="2" fill="#D0D0D0" stroke="#888" stroke-width="0.5"/>
+  <rect x="14" y="25" width="5" height="35" fill="#E0E0E0" opacity="0.5"/>
+  <rect x="12" y="38" width="16" height="4" fill="#FF6F00"/>
+  <text x="20" y="41.5" text-anchor="middle" font-size="3" fill="#FFF" font-weight="bold">DGOM</text>
+  <path d="M12 50 L4 68 L12 60 Z" fill="#FF6F00" stroke="#E65100" stroke-width="0.5"/>
+  <path d="M28 50 L36 68 L28 60 Z" fill="#FF6F00" stroke="#E65100" stroke-width="0.5"/>
+  <path d="M17 55 L20 68 L23 55 Z" fill="#BF360C"/>
+  <path d="M15 60 L13 68 L27 68 L25 60 Z" fill="#616161"/>
+  <g id="flame-group" style="display:none">
+    <path d="M15 68 L20 95 L25 68 Z" fill="#FF6F00" opacity="0.9">
+      <animate attributeName="d" values="M15 68 L20 95 L25 68 Z;M16 68 L20 90 L24 68 Z;M15 68 L20 95 L25 68 Z" dur="0.15s" repeatCount="indefinite"/>
+    </path>
+    <path d="M17 68 L20 88 L23 68 Z" fill="#FFC107" opacity="0.9">
+      <animate attributeName="d" values="M17 68 L20 88 L23 68 Z;M18 68 L20 83 L22 68 Z;M17 68 L20 88 L23 68 Z" dur="0.1s" repeatCount="indefinite"/>
+    </path>
+    <path d="M18.5 68 L20 80 L21.5 68 Z" fill="#FFF9C4" opacity="0.8">
+      <animate attributeName="d" values="M18.5 68 L20 80 L21.5 68 Z;M19 68 L20 76 L21 68 Z;M18.5 68 L20 80 L21.5 68 Z" dur="0.08s" repeatCount="indefinite"/>
+    </path>
+  </g>
+</svg>`;
+
+const goldSVG = `<svg width="50" height="40" viewBox="0 0 50 40">
+  <g><rect x="10" y="28" width="14" height="8" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.5"/><rect x="11" y="29" width="12" height="3" rx="0.5" fill="#FFEC8B" opacity="0.6"/></g>
+  <g><rect x="26" y="28" width="14" height="8" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.5"/><rect x="27" y="29" width="12" height="3" rx="0.5" fill="#FFEC8B" opacity="0.6"/></g>
+  <g><rect x="5" y="20" width="14" height="8" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.5"/><rect x="6" y="21" width="12" height="3" rx="0.5" fill="#FFEC8B" opacity="0.6"/></g>
+  <g><rect x="18" y="20" width="14" height="8" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.5"/><rect x="19" y="21" width="12" height="3" rx="0.5" fill="#FFEC8B" opacity="0.6"/></g>
+  <g><rect x="31" y="20" width="14" height="8" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.5"/><rect x="32" y="21" width="12" height="3" rx="0.5" fill="#FFEC8B" opacity="0.6"/></g>
+  <g><rect x="12" y="12" width="14" height="8" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.5"/><rect x="13" y="13" width="12" height="3" rx="0.5" fill="#FFEC8B" opacity="0.6"/></g>
+  <g><rect x="24" y="12" width="14" height="8" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.5"/><rect x="25" y="13" width="12" height="3" rx="0.5" fill="#FFEC8B" opacity="0.6"/></g>
+  <g><rect x="18" y="4" width="14" height="8" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.5"/><rect x="19" y="5" width="12" height="3" rx="0.5" fill="#FFEC8B" opacity="0.6"/></g>
+  <circle cx="25" cy="8" r="2" fill="#FFF8DC" opacity="0.8"><animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.5s" repeatCount="indefinite"/></circle>
+</svg>`;
+
+function createStars(container, count) {
+  for (let i = 0; i < count; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 2.5 + 0.5;
+    star.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;width:${size}px;height:${size}px;opacity:${Math.random()*0.7+0.3};animation:twinkle ${Math.random()*3+1}s ease-in-out infinite alternate;`;
+    container.appendChild(star);
+  }
+}
+
+function initVisuals() {
+  createStars(document.getElementById('earth-stars'), 60);
+  createStars(document.getElementById('space-stars'), 80);
+  createStars(document.getElementById('mars-stars'), 60);
+
+  const rc = document.getElementById('rocket-container');
+  rc.innerHTML = rocketSVG;
+
+  document.getElementById('gold-earth').innerHTML = goldSVG;
+  document.getElementById('gold-mars').innerHTML = goldSVG;
+}
+
+function formatPrice(price) {
+  if (price >= 1e15) return '$' + price.toExponential(4);
+  if (price >= 1e12) return '$' + (price / 1e12).toFixed(2) + 'T';
+  if (price >= 1e9) return '$' + (price / 1e9).toFixed(2) + 'B';
+  if (price >= 1e6) return '$' + (price / 1e6).toFixed(2) + 'M';
+  return '$' + price.toLocaleString('en-US', {maximumFractionDigits: 0});
+}
+
+function formatNum(n) { return Math.round(n).toLocaleString('en-US'); }
+
+function updateHUD() {
+  document.getElementById('hud-earth').textContent = formatNum(state.goldOnEarth) + ' tons';
+  document.getElementById('hud-mars').textContent = formatNum(state.goldOnMars) + ' tons';
+  document.getElementById('hud-price').textContent = formatPrice(state.goldPrice);
+  document.getElementById('hud-distance').textContent = formatNum(state.distanceToMars) + ' km';
+
+  const statusEl = document.getElementById('hud-status');
+  const statusBox = document.getElementById('hud-status-box');
+  statusEl.textContent = state.rocketStatus.toUpperCase();
+  statusEl.className = 'hud-value ' + state.rocketStatus;
+  statusBox.className = 'hud-box status-' + state.rocketStatus;
+
+  document.getElementById('trip-counter').textContent = 'Trips: ' + state.tripCount;
+}
+
+function setRocketPosition(bottomPct, flip, flames) {
+  const rc = document.getElementById('rocket-container');
+  rc.style.bottom = bottomPct + '%';
+  rc.className = flip ? 'flip' : '';
+  const fg = rc.querySelector('#flame-group');
+  if (fg) fg.style.display = flames ? 'block' : 'none';
+}
+
+function showScreen(name) {
+  document.getElementById('screen-earth').classList.toggle('hidden', name !== 'earth');
+  document.getElementById('screen-space').classList.toggle('hidden', name !== 'space');
+  document.getElementById('screen-mars').classList.toggle('hidden', name !== 'mars');
+}
+
+function showEl(id, show) {
+  document.getElementById(id).classList.toggle('hidden', !show);
+}
+
+function updateUI() {
+  updateHUD();
+
+  const isEarth = state.currentScreen === 'earth';
+  const isMars = state.currentScreen === 'mars';
+  const isSpace = state.currentScreen === 'space';
+
+  showScreen(state.currentScreen);
+
+  // Gold piles
+  showEl('gold-earth', isEarth && state.goldOnEarth > 0 && state.phase !== 'landing');
+  showEl('gold-mars', isMars && state.goldOnMars > 0 && state.phase !== 'landing');
+
+  // Buttons/hints
+  const canLoad = isEarth && state.phase === 'idle' && state.rocketStatus === 'unloaded' && state.goldOnEarth >= GOLD_PER_LOAD;
+  const canLaunch = isEarth && state.phase === 'idle' && state.rocketStatus === 'loaded';
+  const allDone = isEarth && state.phase === 'idle' && state.goldOnEarth < GOLD_PER_LOAD;
+
+  showEl('load-btn', canLoad);
+  showEl('launch-hint', canLaunch);
+  showEl('end-msg', allDone);
+  showEl('travel-info', isSpace);
+  showEl('celebration-box', isMars && state.showMessage);
+
+  if (isSpace) {
+    const progress = 1 - state.distanceToMars / TOTAL_DISTANCE;
+    const pct = state.direction === 'toMars' ? Math.round(progress * 100) : Math.round((1 - progress) * 100);
+    const label = state.direction === 'toMars' ? '🚀 En route to Mars...' : '🚀 Returning to Earth...';
+    document.getElementById('travel-info').textContent = label + ' ' + pct + '%';
+    updateSpacePlanets(progress);
+  }
+}
+
+function updateSpacePlanets(progress) {
+  const pa = document.getElementById('planet-a');
+  const pb = document.getElementById('planet-b');
+  const h = window.innerHeight;
+  const w = window.innerWidth;
+
+  if (state.direction === 'toMars') {
+    // Earth shrinking at bottom
+    const eSize = Math.max(10, 100 - progress * 60);
+    pa.className = 'planet earth-orb';
+    pa.style.cssText = `bottom:${-20 - progress * 60}px;left:${w/2 - eSize/2}px;width:${eSize}px;height:${eSize}px;`;
+    showEl('planet-a', true);
+
+    // Mars appearing at top
+    if (progress > 0.3) {
+      const mSize = 20 + (progress - 0.3) * 80;
+      pb.className = 'planet mars-orb';
+      pb.style.cssText = `top:${60 - (progress - 0.3) * 100}px;left:${w/2 - mSize/2}px;width:${mSize}px;height:${mSize}px;opacity:${Math.min(1, (progress - 0.3) * 2)};`;
+      showEl('planet-b', true);
+    } else {
+      showEl('planet-b', false);
+    }
+  } else {
+    // Mars shrinking at top
+    const rp = 1 - progress;
+    const mSize = Math.max(10, 100 - rp * 60);
+    pa.className = 'planet mars-orb';
+    pa.style.cssText = `top:${-20 - rp * 60}px;left:${w/2 - mSize/2}px;width:${mSize}px;height:${mSize}px;`;
+    showEl('planet-a', true);
+
+    // Earth appearing at bottom
+    if (rp > 0.3) {
+      const eSize = 20 + (rp - 0.3) * 80;
+      pb.className = 'planet earth-orb';
+      pb.style.cssText = `bottom:${60 - (rp - 0.3) * 100}px;left:${w/2 - eSize/2}px;width:${eSize}px;height:${eSize}px;opacity:${Math.min(1, (rp - 0.3) * 2)};`;
+      showEl('planet-b', true);
+    } else {
+      showEl('planet-b', false);
+    }
+  }
+}
+
+// ===== GAME LOGIC =====
+function loadGold() {
+  initAudio();
+  if (soundOn) startBgMusic();
+  playLoadSound();
+  state.rocketStatus = 'loaded';
+  setRocketPosition(26, false, false);
+  updateUI();
+  saveGame();
+}
+
+function startTravel(direction) {
+  initAudio();
+  if (soundOn) startBgMusic();
+  playRocketSound();
+
+  state.currentScreen = 'space';
+  state.phase = 'traveling';
+  state.direction = direction;
+
+  setRocketPosition(45, direction === 'toEarth', true);
+  showScreen('space');
+  updateUI();
+
+  let elapsed = 0;
+  const interval = 100;
+
+  if (travelTimer) clearInterval(travelTimer);
+  travelTimer = setInterval(() => {
+    elapsed += interval / 1000;
+    const fraction = Math.min(elapsed / TRAVEL_DURATION, 1);
+
+    state.distanceToMars = direction === 'toMars'
+      ? Math.max(0, TOTAL_DISTANCE * (1 - fraction))
+      : Math.min(TOTAL_DISTANCE, TOTAL_DISTANCE * fraction);
+
+    updateUI();
+
+    if (fraction >= 1) {
+      clearInterval(travelTimer);
+      travelTimer = null;
+      stopRocketSound();
+
+      if (direction === 'toMars') {
+        landOnMars();
+      } else {
+        landOnEarth();
+      }
+    }
+  }, interval);
+}
+
+function landOnMars() {
+  state.currentScreen = 'mars';
+  state.phase = 'landing';
+  state.distanceToMars = 0;
+  showScreen('mars');
+  showEl('gold-mars', false);
+
+  let y = 70;
+  setRocketPosition(y, true, true);
+  updateUI();
+
+  if (landingTimer) clearInterval(landingTimer);
+  landingTimer = setInterval(() => {
+    y -= 2;
+    setRocketPosition(y, true, true);
+    if (y <= 26) {
+      clearInterval(landingTimer);
+      landingTimer = null;
+
+      // Deliver gold
+      state.goldOnMars += GOLD_PER_LOAD;
+      state.goldOnEarth -= GOLD_PER_LOAD;
+      state.goldPrice = state.goldPrice * (100 + state.goldOnMars / INITIAL_GOLD);
+      state.rocketStatus = 'unloaded';
+      state.phase = 'idle';
+      state.showMessage = true;
+      state.tripCount++;
+
+      setRocketPosition(26, false, false);
+      updateUI();
+      playCelebration();
+      saveGame();
+    }
+  }, 40);
+}
+
+function landOnEarth() {
+  state.currentScreen = 'earth';
+  state.phase = 'landing';
+  state.distanceToMars = TOTAL_DISTANCE;
+  showScreen('earth');
+
+  let y = 70;
+  setRocketPosition(y, true, true);
+  updateUI();
+
+  if (landingTimer) clearInterval(landingTimer);
+  landingTimer = setInterval(() => {
+    y -= 2;
+    setRocketPosition(y, true, true);
+    if (y <= 26) {
+      clearInterval(landingTimer);
+      landingTimer = null;
+
+      state.phase = 'idle';
+      state.showMessage = false;
+      state.direction = 'toMars';
+
+      setRocketPosition(26, false, false);
+      updateUI();
+      saveGame();
+    }
+  }, 40);
+}
+
+// ===== SWIPE HANDLING =====
+let touchStartY = null;
+let mouseStartY = null;
+
+document.addEventListener('touchstart', (e) => {
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+  if (touchStartY === null) return;
+  const diff = touchStartY - e.changedTouches[0].clientY;
+  touchStartY = null;
+  handleSwipeUp(diff);
+});
+
+document.addEventListener('mousedown', (e) => {
+  mouseStartY = e.clientY;
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (mouseStartY === null) return;
+  const diff = mouseStartY - e.clientY;
+  mouseStartY = null;
+  handleSwipeUp(diff);
+});
+
+function handleSwipeUp(diff) {
+  if (diff < 50) return;
+  initAudio();
+  if (soundOn) startBgMusic();
+
+  if (state.currentScreen === 'earth' && state.rocketStatus === 'loaded' && state.phase === 'idle') {
+    startTravel('toMars');
+  } else if (state.currentScreen === 'mars' && state.phase === 'idle' && state.showMessage) {
+    state.showMessage = false;
+    state.direction = 'toEarth';
+    startTravel('toEarth');
+  }
+}
+
+// ===== SAVE / LOAD =====
+function saveGame() {
+  try {
+    localStorage.setItem('dgom-save', JSON.stringify(state));
+  } catch(e) {}
+}
+
+function loadGame() {
+  try {
+    const saved = localStorage.getItem('dgom-save');
+    if (saved) {
+      const s = JSON.parse(saved);
+      // Reset transient states
+      s.phase = 'idle';
+      s.showMessage = false;
+      if (s.currentScreen === 'space') {
+        s.currentScreen = s.direction === 'toMars' ? 'earth' : 'mars';
+        s.distanceToMars = s.direction === 'toMars' ? TOTAL_DISTANCE : 0;
+      }
+      if (s.currentScreen === 'mars' && s.rocketStatus === 'loaded') {
+        s.rocketStatus = 'unloaded';
+      }
+      Object.assign(state, s);
+    }
+  } catch(e) {}
+}
+
+// ===== INIT =====
+window.addEventListener('load', () => {
+  initVisuals();
+  loadGame();
+  setRocketPosition(26, false, false);
+  updateUI();
+});
+
+// Save on page hide
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) saveGame();
+});
+window.addEventListener('beforeunload', saveGame);
+</script>
+</body>
+</html>
