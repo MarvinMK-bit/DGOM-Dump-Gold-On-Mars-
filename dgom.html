@@ -197,6 +197,134 @@
     font-size: 10px; color: rgba(255,255,255,0.3);
   }
 
+  /* Mining Cinema Overlay */
+  #mining-cinema {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 150; overflow: hidden; background: #000;
+  }
+  #cinema-scene {
+    position: absolute; top: 0; left: 0;
+    width: 250vw; height: 100%;
+    transition: transform 2.5s ease-in-out;
+  }
+  #cinema-scene.pan-right {
+    transform: translateX(calc(-150vw));
+  }
+  /* Mine area (left portion) */
+  .mine-ground {
+    position: absolute; bottom: 0; left: 0; width: 120vw; height: 30%;
+    background: linear-gradient(180deg, #5D4037 0%, #4E342E 30%, #3E2723 60%, #4E342E 100%);
+    border-top: 3px solid #795548;
+  }
+  .mine-sky {
+    position: absolute; top: 0; left: 0; width: 120vw; height: 70%;
+    background: linear-gradient(180deg, #000011 0%, #000833 40%, #001155 100%);
+  }
+  /* Road / transition area */
+  .road-ground {
+    position: absolute; bottom: 0; left: 100vw; width: 50vw; height: 30%;
+    background: linear-gradient(180deg, #4E6B3A 0%, #2E7D32 30%, #1B5E20 60%, #33691E 100%);
+    border-top: 3px solid #4CAF50;
+  }
+  .road-sky {
+    position: absolute; top: 0; left: 100vw; width: 50vw; height: 70%;
+    background: linear-gradient(180deg, #000011 0%, #000833 40%, #001155 100%);
+  }
+  /* Bank area (right portion) */
+  .cinema-bank-area {
+    position: absolute; bottom: 0; left: 150vw; width: 100vw; height: 30%;
+    background: linear-gradient(180deg, #2E7D32 0%, #1B5E20 30%, #33691E 60%, #1B5E20 100%);
+    border-top: 3px solid #4CAF50;
+  }
+  .cinema-bank-sky {
+    position: absolute; top: 0; left: 150vw; width: 100vw; height: 70%;
+    background: linear-gradient(180deg, #000011 0%, #000833 40%, #001155 100%);
+  }
+  /* Mine entrance */
+  .mine-entrance {
+    position: absolute; bottom: 30%; left: 8vw;
+  }
+  /* Miners */
+  .miner {
+    position: absolute; bottom: 30%;
+  }
+  .miner-body { position: relative; }
+  /* Pickaxe swing animation */
+  @keyframes swingPick {
+    0%, 100% { transform: rotate(-30deg); }
+    50% { transform: rotate(30deg); }
+  }
+  /* Conveyor belt */
+  .conveyor-belt {
+    position: absolute; bottom: 30%; left: 30vw;
+    width: 45vw; height: 6px;
+    background: repeating-linear-gradient(90deg, #555 0px, #555 8px, #888 8px, #888 16px);
+    transform: rotate(-5deg);
+    transform-origin: left center;
+    border: 1px solid #333;
+    animation: beltMove 0.5s linear infinite;
+  }
+  @keyframes beltMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 16px 0; }
+  }
+  .conveyor-leg {
+    position: absolute; width: 4px; background: #666;
+    border: 1px solid #444;
+  }
+  /* Gold nuggets on conveyor */
+  .conveyor-nugget {
+    position: absolute; z-index: 5;
+    animation: rideConveyor 3s linear infinite;
+  }
+  @keyframes rideConveyor {
+    0% { left: 30vw; bottom: calc(30% + 6px); opacity: 1; }
+    90% { left: 72vw; bottom: calc(30% - 6px); opacity: 1; }
+    100% { left: 75vw; bottom: calc(30% - 10px); opacity: 0; }
+  }
+  /* Mining cart */
+  .mining-cart {
+    position: absolute; bottom: calc(30% - 4px); z-index: 10;
+    transition: left 2.5s ease-in-out;
+  }
+  /* Gold in cart counter */
+  .cart-gold-label {
+    position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+    color: #FFD700; font-size: 11px; font-weight: 800;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 6px rgba(255,215,0,0.5);
+    white-space: nowrap;
+  }
+  /* Cinema bank building */
+  .cinema-bank {
+    position: absolute; right: 15vw; bottom: 30%; z-index: 4;
+  }
+  /* Cinema car-to-bank flying gold */
+  .cinema-flying-gold {
+    position: absolute; z-index: 15; pointer-events: none;
+    transition: all 0.5s cubic-bezier(0.2,0.8,0.3,1);
+  }
+  /* Mining status text */
+  .cinema-status {
+    position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%);
+    z-index: 20; color: #FFA000; font-size: 14px; font-weight: 700;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 10px rgba(255,160,0,0.5);
+    background: rgba(0,0,0,0.7); padding: 8px 16px; border-radius: 8px;
+    animation: pulse 1.5s ease-in-out infinite;
+    white-space: nowrap;
+  }
+  /* Spark effects from mining */
+  @keyframes spark {
+    0% { opacity: 1; transform: translate(0, 0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(0); }
+  }
+  .spark {
+    position: absolute; width: 3px; height: 3px;
+    background: #FFD700; border-radius: 50%;
+    pointer-events: none;
+  }
+
   .hidden { display: none !important; }
 
   @keyframes twinkle {
@@ -302,6 +430,57 @@
   <div id="end-msg" class="end-msg hidden">🏆 All gold delivered to Mars!</div>
 
   <div id="trip-counter">Trips: 0</div>
+
+  <!-- MINING CINEMA OVERLAY -->
+  <div id="mining-cinema" class="hidden">
+    <div id="cinema-scene">
+      <!-- Mine sky + ground -->
+      <div class="mine-sky" id="cinema-mine-stars"></div>
+      <div class="mine-ground">
+        <!-- Rocky texture details -->
+        <div style="position:absolute;top:8px;left:10%;width:40px;height:12px;border-radius:50%;background:rgba(121,85,72,0.4)"></div>
+        <div style="position:absolute;top:18px;left:25%;width:30px;height:10px;border-radius:50%;background:rgba(93,64,55,0.3)"></div>
+        <div style="position:absolute;top:6px;left:60%;width:35px;height:14px;border-radius:50%;background:rgba(121,85,72,0.3)"></div>
+      </div>
+      <div class="road-sky"></div>
+      <div class="road-ground">
+        <!-- Road markings -->
+        <div style="position:absolute;top:45%;left:10%;width:15%;height:3px;background:rgba(255,255,255,0.15);border-radius:2px;"></div>
+        <div style="position:absolute;top:45%;left:40%;width:15%;height:3px;background:rgba(255,255,255,0.15);border-radius:2px;"></div>
+        <div style="position:absolute;top:45%;left:70%;width:15%;height:3px;background:rgba(255,255,255,0.15);border-radius:2px;"></div>
+      </div>
+      <div class="cinema-bank-sky" id="cinema-bank-stars"></div>
+      <div class="cinema-bank-area">
+        <div style="position:absolute;top:8px;left:10%;width:60px;height:20px;border-radius:50%;background:rgba(76,175,80,0.4)"></div>
+        <div style="position:absolute;top:15px;left:40%;width:40px;height:15px;border-radius:50%;background:rgba(56,142,60,0.3)"></div>
+      </div>
+
+      <!-- Mine entrance -->
+      <div class="mine-entrance" id="mine-entrance"></div>
+
+      <!-- Miners -->
+      <div class="miner" id="miner1" style="left:18vw;"></div>
+      <div class="miner" id="miner2" style="left:24vw;"></div>
+
+      <!-- Conveyor belt -->
+      <div class="conveyor-belt" id="conveyor-belt"></div>
+      <div class="conveyor-leg" style="position:absolute;bottom:22%;left:35vw;width:4px;height:8%;background:#666;"></div>
+      <div class="conveyor-leg" style="position:absolute;bottom:22%;left:50vw;width:4px;height:8%;background:#666;"></div>
+      <div class="conveyor-leg" style="position:absolute;bottom:22%;left:65vw;width:4px;height:8%;background:#666;"></div>
+
+      <!-- Mining cart -->
+      <div class="mining-cart" id="mining-cart"></div>
+
+      <!-- Cinema bank building -->
+      <div class="cinema-bank" id="cinema-bank"></div>
+
+      <!-- Flying gold container for car-to-bank -->
+      <div id="cinema-gold-container" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:15;"></div>
+
+      <!-- Status text -->
+      <div class="cinema-status" id="cinema-status">⛏️ Mining gold...</div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -506,10 +685,98 @@ const goldBarMiniSVG = `<svg width="16" height="10" viewBox="0 0 16 10">
   <rect x="2" y="2" width="12" height="3" rx="0.5" fill="#FFEC8B" opacity="0.6"/>
 </svg>`;
 
+// Mine entrance SVG
+const mineEntranceSVG = `<svg width="100" height="80" viewBox="0 0 100 80">
+  <!-- Rock face -->
+  <path d="M0 80 L0 20 Q10 5 25 10 Q40 0 55 8 Q70 2 85 12 Q95 8 100 20 L100 80 Z" fill="#5D4037"/>
+  <path d="M5 80 L5 25 Q15 12 28 16 Q38 8 52 14 Q65 8 78 16 Q90 12 95 25 L95 80 Z" fill="#4E342E"/>
+  <!-- Mine opening -->
+  <rect x="25" y="35" width="50" height="45" rx="3" fill="#1a1a1a" stroke="#3E2723" stroke-width="2"/>
+  <!-- Support beams -->
+  <rect x="22" y="32" width="4" height="48" fill="#8D6E63" stroke="#5D4037" stroke-width="0.5"/>
+  <rect x="74" y="32" width="4" height="48" fill="#8D6E63" stroke="#5D4037" stroke-width="0.5"/>
+  <rect x="20" y="30" width="60" height="5" rx="1" fill="#8D6E63" stroke="#5D4037" stroke-width="0.5"/>
+  <!-- MINE text -->
+  <text x="50" y="26" text-anchor="middle" font-size="8" fill="#FFD700" font-weight="bold" font-family="serif">⛏ MINE</text>
+  <!-- Track rails coming out -->
+  <line x1="35" y1="80" x2="30" y2="55" stroke="#888" stroke-width="2"/>
+  <line x1="65" y1="80" x2="70" y2="55" stroke="#888" stroke-width="2"/>
+</svg>`;
+
+// Miner SVG (stick figure with pickaxe)
+const minerSVG = `<svg width="40" height="50" viewBox="0 0 40 50">
+  <!-- Hard hat -->
+  <ellipse cx="20" cy="8" rx="8" ry="5" fill="#FFC107"/>
+  <rect x="12" y="6" width="16" height="3" rx="1" fill="#FFA000"/>
+  <circle cx="20" cy="3" r="1.5" fill="#fff" opacity="0.8"/>
+  <!-- Head -->
+  <circle cx="20" cy="12" r="5" fill="#FFCCBC"/>
+  <!-- Body -->
+  <line x1="20" y1="17" x2="20" y2="32" stroke="#2196F3" stroke-width="3" stroke-linecap="round"/>
+  <!-- Legs -->
+  <line x1="20" y1="32" x2="14" y2="45" stroke="#1565C0" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="20" y1="32" x2="26" y2="45" stroke="#1565C0" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Boots -->
+  <rect x="11" y="43" width="6" height="4" rx="1" fill="#5D4037"/>
+  <rect x="23" y="43" width="6" height="4" rx="1" fill="#5D4037"/>
+  <!-- Arms holding pickaxe -->
+  <line x1="20" y1="22" x2="12" y2="18" stroke="#FFCCBC" stroke-width="2" stroke-linecap="round"/>
+  <line x1="20" y1="22" x2="28" y2="16" stroke="#FFCCBC" stroke-width="2" stroke-linecap="round"/>
+  <!-- Pickaxe -->
+  <g style="transform-origin: 20px 20px; animation: swingPick 0.8s ease-in-out infinite;">
+    <line x1="10" y1="10" x2="32" y2="20" stroke="#8D6E63" stroke-width="2" stroke-linecap="round"/>
+    <path d="M8 8 L14 6 L12 12 Z" fill="#78909C" stroke="#546E7A" stroke-width="0.5"/>
+  </g>
+</svg>`;
+
+// Mining cart SVG
+const miningCartSVG = `<svg width="70" height="50" viewBox="0 0 70 50">
+  <!-- Cart body -->
+  <path d="M8 15 L5 40 L65 40 L62 15 Z" fill="#616161" stroke="#424242" stroke-width="1"/>
+  <path d="M10 17 L8 38 L62 38 L60 17 Z" fill="#757575"/>
+  <!-- Gold bars in cart -->
+  <rect x="15" y="25" width="12" height="6" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.4"/>
+  <rect x="28" y="25" width="12" height="6" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.4"/>
+  <rect x="41" y="25" width="12" height="6" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.4"/>
+  <rect x="20" y="19" width="12" height="6" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.4"/>
+  <rect x="33" y="19" width="12" height="6" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.4"/>
+  <rect x="26" y="13" width="12" height="6" rx="1" fill="#FFD700" stroke="#B8860B" stroke-width="0.4"/>
+  <!-- Wheels -->
+  <circle cx="18" cy="44" r="5" fill="#424242" stroke="#333" stroke-width="1"/>
+  <circle cx="18" cy="44" r="2" fill="#666"/>
+  <circle cx="52" cy="44" r="5" fill="#424242" stroke="#333" stroke-width="1"/>
+  <circle cx="52" cy="44" r="2" fill="#666"/>
+  <!-- Wheel spokes animation -->
+  <g>
+    <line x1="18" y1="39" x2="18" y2="49" stroke="#555" stroke-width="0.5">
+      <animateTransform attributeName="transform" type="rotate" from="0 18 44" to="360 18 44" dur="0.5s" repeatCount="indefinite"/>
+    </line>
+    <line x1="13" y1="44" x2="23" y2="44" stroke="#555" stroke-width="0.5">
+      <animateTransform attributeName="transform" type="rotate" from="0 18 44" to="360 18 44" dur="0.5s" repeatCount="indefinite"/>
+    </line>
+  </g>
+  <g>
+    <line x1="52" y1="39" x2="52" y2="49" stroke="#555" stroke-width="0.5">
+      <animateTransform attributeName="transform" type="rotate" from="0 52 44" to="360 52 44" dur="0.5s" repeatCount="indefinite"/>
+    </line>
+    <line x1="47" y1="44" x2="57" y2="44" stroke="#555" stroke-width="0.5">
+      <animateTransform attributeName="transform" type="rotate" from="0 52 44" to="360 52 44" dur="0.5s" repeatCount="indefinite"/>
+    </line>
+  </g>
+</svg>`;
+
+// Gold nugget for conveyor
+const goldNuggetSVG = `<svg width="12" height="10" viewBox="0 0 12 10">
+  <path d="M2 8 L0 4 L3 0 L9 0 L12 4 L10 8 Z" fill="#FFD700" stroke="#B8860B" stroke-width="0.5"/>
+  <path d="M3 6 L2 3 L4 1 L8 1 L10 3 L9 6 Z" fill="#FFEC8B" opacity="0.5"/>
+</svg>`;
+
 function initVisuals() {
   createStars(document.getElementById('earth-stars'), 60);
   createStars(document.getElementById('space-stars'), 80);
   createStars(document.getElementById('mars-stars'), 60);
+  createStars(document.getElementById('cinema-mine-stars'), 40);
+  createStars(document.getElementById('cinema-bank-stars'), 40);
 
   const rc = document.getElementById('rocket-container');
   rc.innerHTML = rocketSVG;
@@ -517,6 +784,13 @@ function initVisuals() {
   document.getElementById('gold-earth').innerHTML = goldSVG;
   document.getElementById('gold-mars').innerHTML = goldSVG;
   document.getElementById('bank-building').innerHTML = bankSVG;
+
+  // Cinema elements
+  document.getElementById('mine-entrance').innerHTML = mineEntranceSVG;
+  document.getElementById('miner1').innerHTML = minerSVG;
+  document.getElementById('miner2').innerHTML = minerSVG;
+  document.getElementById('mining-cart').innerHTML = miningCartSVG;
+  document.getElementById('cinema-bank').innerHTML = bankSVG;
 }
 
 function formatPrice(price) {
@@ -643,6 +917,198 @@ function updateSpacePlanets(progress) {
 
 // ===== GAME LOGIC =====
 let loadAnimTimer = null;
+let cinemaTimers = [];
+
+function clearCinemaTimers() {
+  cinemaTimers.forEach(t => clearTimeout(t));
+  cinemaTimers = [];
+}
+
+// Mining sound effects
+function playPickaxeSound() {
+  if (!audioCtx || !soundOn) return;
+  try {
+    const osc = audioCtx.createOscillator(); osc.type = 'triangle';
+    osc.frequency.setValueAtTime(200 + Math.random() * 100, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.1);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+  } catch(e) {}
+}
+
+function playCartSound() {
+  if (!audioCtx || !soundOn) return;
+  try {
+    const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.3;
+    const noise = audioCtx.createBufferSource(); noise.buffer = buf;
+    const f = audioCtx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 200;
+    const g = audioCtx.createGain(); g.gain.value = 0.05;
+    noise.connect(f); f.connect(g); g.connect(audioCtx.destination);
+    noise.start();
+  } catch(e) {}
+}
+
+function playClinkSound(pitch) {
+  if (!audioCtx || !soundOn) return;
+  try {
+    const osc = audioCtx.createOscillator(); osc.type = 'sine';
+    osc.frequency.value = pitch || 800;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.06, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+  } catch(e) {}
+}
+
+// Spawn gold nuggets on conveyor
+function spawnConveyorNuggets(scene) {
+  let nuggetCount = 0;
+  const nuggetTimer = setInterval(() => {
+    if (nuggetCount >= 6) { clearInterval(nuggetTimer); return; }
+    const nugget = document.createElement('div');
+    nugget.className = 'conveyor-nugget';
+    nugget.innerHTML = goldNuggetSVG;
+    nugget.style.animationDelay = '0s';
+    nugget.style.animationDuration = '2.5s';
+    scene.appendChild(nugget);
+    playPickaxeSound();
+
+    // Create spark at mine
+    for (let s = 0; s < 3; s++) {
+      const spark = document.createElement('div');
+      spark.className = 'spark';
+      spark.style.cssText = `left:${22 + Math.random() * 5}vw;bottom:${32 + Math.random() * 5}%;--sx:${(Math.random()-0.5)*30}px;--sy:${-10-Math.random()*20}px;animation:spark 0.4s ease-out forwards;`;
+      scene.appendChild(spark);
+      setTimeout(() => { if(spark.parentNode) spark.remove(); }, 500);
+    }
+
+    // Remove nugget after animation
+    setTimeout(() => { if(nugget.parentNode) nugget.remove(); }, 2500);
+    nuggetCount++;
+  }, 500);
+  cinemaTimers.push(nuggetTimer);
+  return nuggetTimer;
+}
+
+// Main cinema sequence
+function startMiningCinema(onComplete) {
+  clearCinemaTimers();
+
+  const cinema = document.getElementById('mining-cinema');
+  const scene = document.getElementById('cinema-scene');
+  const cart = document.getElementById('mining-cart');
+  const status = document.getElementById('cinema-status');
+  const goldContainer = document.getElementById('cinema-gold-container');
+
+  // Reset positions
+  scene.classList.remove('pan-right');
+  scene.style.transform = '';
+  cart.style.left = '75vw';
+  goldContainer.innerHTML = '';
+  status.textContent = '⛏️ Mining gold...';
+
+  // Show cinema
+  cinema.classList.remove('hidden');
+
+  // Phase 1: Mining scene (3.5 seconds)
+  spawnConveyorNuggets(scene);
+
+  // Periodic pickaxe sounds
+  let pickCount = 0;
+  const pickTimer = setInterval(() => {
+    if (pickCount >= 7) { clearInterval(pickTimer); return; }
+    playPickaxeSound();
+    pickCount++;
+  }, 450);
+  cinemaTimers.push(pickTimer);
+
+  // Phase 2: Cart filled, status update (at 3.5s)
+  cinemaTimers.push(setTimeout(() => {
+    status.textContent = '🚗 Transporting gold to bank...';
+    playCartSound();
+
+    // Pan scene to the right to follow cart to bank
+    scene.style.transform = 'translateX(-150vw)';
+
+    // Move cart across the scene to bank area
+    cart.style.left = '170vw';
+
+  }, 3500));
+
+  // Phase 3: Cart arrives at bank (at 6.5s)
+  cinemaTimers.push(setTimeout(() => {
+    status.textContent = '🏦 Depositing gold into bank...';
+
+    // Animate gold bars from cart to bank
+    const bankEl = document.getElementById('cinema-bank');
+    const cartEl = document.getElementById('mining-cart');
+
+    // Get approximate positions within the scene
+    // The scene is translated, so we need screen coordinates
+    const bankRect = bankEl.getBoundingClientRect();
+    const cartRect = cartEl.getBoundingClientRect();
+
+    const startX = cartRect.left + cartRect.width * 0.5;
+    const startY = cartRect.top + cartRect.height * 0.3;
+    const endX = bankRect.left + bankRect.width * 0.5;
+    const endY = bankRect.top + bankRect.height * 0.7;
+
+    let barsDeposited = 0;
+    const depositTimer = setInterval(() => {
+      if (barsDeposited >= 6) {
+        clearInterval(depositTimer);
+        return;
+      }
+
+      const bar = document.createElement('div');
+      bar.className = 'cinema-flying-gold';
+      bar.innerHTML = goldBarMiniSVG;
+      bar.style.cssText = `position:fixed;left:${startX}px;top:${startY}px;`;
+      document.getElementById('mining-cinema').appendChild(bar);
+
+      playClinkSound(700 + barsDeposited * 50);
+
+      requestAnimationFrame(() => {
+        bar.style.left = endX + 'px';
+        bar.style.top = endY + 'px';
+        bar.style.transform = `rotate(${Math.random()*20-10}deg) scale(0.8)`;
+      });
+
+      setTimeout(() => {
+        bar.style.opacity = '0';
+        setTimeout(() => { if(bar.parentNode) bar.remove(); }, 200);
+      }, 550);
+
+      barsDeposited++;
+    }, 250);
+    cinemaTimers.push(depositTimer);
+
+  }, 6500));
+
+  // Phase 4: Fade out cinema, start bank-to-rocket (at 8.5s)
+  cinemaTimers.push(setTimeout(() => {
+    cinema.style.transition = 'opacity 0.5s';
+    cinema.style.opacity = '0';
+
+    setTimeout(() => {
+      cinema.classList.add('hidden');
+      cinema.style.opacity = '';
+      cinema.style.transition = '';
+
+      // Clean up stray cinema elements
+      document.querySelectorAll('.cinema-flying-gold').forEach(el => el.remove());
+
+      // Now run the bank-to-rocket loading
+      if (onComplete) onComplete();
+    }, 600);
+  }, 8500));
+}
 
 function loadGold() {
   initAudio();
@@ -651,6 +1117,13 @@ function loadGold() {
   showEl('load-btn', false);
   updateUI();
 
+  // Start the mining cinema, then bank-to-rocket on completion
+  startMiningCinema(() => {
+    runBankToRocketLoading();
+  });
+}
+
+function runBankToRocketLoading() {
   // Get positions for animation
   const bank = document.getElementById('bank-building');
   const rocket = document.getElementById('rocket-container');
@@ -665,14 +1138,13 @@ function loadGold() {
 
   let barsLaunched = 0;
   const totalBars = 8;
-  const barInterval = 250; // ms between each bar
+  const barInterval = 250;
 
   loadAnimTimer = setInterval(() => {
     if (barsLaunched >= totalBars) {
       clearInterval(loadAnimTimer);
       loadAnimTimer = null;
 
-      // Finish loading after last bar arrives
       setTimeout(() => {
         container.innerHTML = '';
         state.rocketStatus = 'loaded';
@@ -685,18 +1157,15 @@ function loadGold() {
       return;
     }
 
-    // Create a flying gold bar
     const bar = document.createElement('div');
     bar.className = 'flying-gold';
     bar.innerHTML = goldBarMiniSVG;
     bar.style.cssText = `left:${startX}px;top:${startY}px;position:absolute;transition:all 0.5s cubic-bezier(0.2,0.8,0.3,1);`;
     container.appendChild(bar);
 
-    // Play a tiny clink sound for each bar
     if (audioCtx && soundOn) {
       try {
-        const osc = audioCtx.createOscillator();
-        osc.type = 'sine';
+        const osc = audioCtx.createOscillator(); osc.type = 'sine';
         osc.frequency.value = 800 + barsLaunched * 60;
         const g = audioCtx.createGain();
         g.gain.setValueAtTime(0.06, audioCtx.currentTime);
@@ -706,15 +1175,12 @@ function loadGold() {
       } catch(e) {}
     }
 
-    // Animate to rocket with slight arc
     requestAnimationFrame(() => {
-      const midY = Math.min(startY, endY) - 30 - Math.random() * 20;
       bar.style.left = endX + 'px';
       bar.style.top = endY + 'px';
       bar.style.transform = `rotate(${Math.random() * 30 - 15}deg) scale(0.8)`;
     });
 
-    // Remove bar after it arrives
     setTimeout(() => {
       bar.style.opacity = '0';
       setTimeout(() => { if (bar.parentNode) bar.parentNode.removeChild(bar); }, 200);
@@ -926,7 +1392,11 @@ function cancelReset() {
 function doReset() {
   if (resetOverlay) { resetOverlay.remove(); resetOverlay = null; }
   if (loadAnimTimer) { clearInterval(loadAnimTimer); loadAnimTimer = null; }
+  clearCinemaTimers();
   document.getElementById('flying-gold-container').innerHTML = '';
+  document.getElementById('mining-cinema').classList.add('hidden');
+  document.getElementById('mining-cinema').style.opacity = '';
+  document.getElementById('mining-cinema').style.transition = '';
   state.goldOnEarth = 300000;
   state.goldOnMars = 0;
   state.rocketStatus = 'unloaded';
